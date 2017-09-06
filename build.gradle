@@ -1,0 +1,42 @@
+plugins {
+    id 'idea'
+    id 'groovy'
+    id 'com.gradle.plugin-publish' version '0.9.7'
+    id 'com.palantir.git-version' version '0.8.0'
+    id 'maven'
+}
+
+project.version = gitVersion()
+project.group = 'com.jetbrains.node'
+
+sourceCompatibility = '1.6'
+targetCompatibility = '1.6'
+
+repositories {
+    jcenter()
+}
+
+uploadArchives {
+    repositories {
+        maven {
+            url uri('../mvn_repo')
+        }
+    }
+}
+
+dependencies {
+    compile gradleApi()
+}
+
+pluginBundle {
+    website = 'https://github.com/JetBrains/gradle-node-envs'
+    vcsUrl = 'https://github.com/JetBrains/gradle-node-envs'
+    description = 'Gradle plugin to install different Node.js environments'
+    tags = ['node.js']
+    plugins {
+        nodeEnvsPlugin {
+            id = 'com.jetbrains.node.envs'
+            displayName = 'Gradle Node Envs plugin'
+        }
+    }
+}
