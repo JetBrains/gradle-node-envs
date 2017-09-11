@@ -40,6 +40,7 @@ class NodeEnvsPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
+        project.mkdir("build")
         NodeEnvsExtension envs = project.extensions.create("envs", NodeEnvsExtension.class)
 
         project.afterEvaluate {
@@ -64,24 +65,17 @@ class NodeEnvsPlugin implements Plugin<Project> {
                             }
 
                             project.logger.quiet("Bootstraping to $env.dir")
-                            String folderNameFromArchive = null
                             switch (archive.name as String) {
                                 case { it.endsWith("zip") }:
                                     project.ant.unzip(src: archive, dest: project.buildDir)
-                                    folderNameFromArchive = archive.name.replaceFirst(".zip", "")
+                                    new File(project.buildDir, archive.name.replaceFirst(".zip", "")).with { src ->
+                                        project.ant.move(file: src, tofile: env.dir)
+                                    }
                                     break
                                 case { it.endsWith("tar.gz") }:
-                                    project.ant.gunzip(src: archive)
-                                    new File(project.buildDir, archive.name[0..-1 - ".gz".length()]).with { tar ->
-                                        project.ant.untar(src: tar, dest: project.buildDir)
-                                        project.ant.delete(file: tar)
-                                    }
-                                    folderNameFromArchive = archive.name.replaceFirst(".tar.gz", "")
+                                    project.ant.mkdir(dir: env.dir)
+                                    "tar --strip-components 1 -xzf $archive -C $env.dir".execute()
                                     break
-                            }
-
-                            new File(project.buildDir, folderNameFromArchive).with { src ->
-                                project.ant.move(file: src, tofile: env.dir)
                             }
 
                         }
