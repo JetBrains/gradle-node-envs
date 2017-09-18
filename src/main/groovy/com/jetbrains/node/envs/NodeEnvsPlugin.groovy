@@ -2,6 +2,7 @@ package com.jetbrains.node.envs
 
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.Task
 
 class NodeEnvsPlugin implements Plugin<Project> {
     private OS os = OS.getOs()
@@ -38,6 +39,59 @@ class NodeEnvsPlugin implements Plugin<Project> {
         return new URL("https://nodejs.org/dist/$version/node-$version-$os.archiveName-$arch.$os.archiveExtension")
     }
 
+    private Task createNodeJs(Project project, Node env) {
+        return project.tasks.create(name: "Bootstrap Node.js '$env.name'") {
+            onlyIf {
+                !env.dir.exists()
+            }
+
+            doLast {
+                URL urlToNode = getUrlToDownloadNode(env)
+                File archive = new File(project.buildDir, urlToNode.toString().split("/").last())
+
+                if (!archive.exists()) {
+                    project.logger.quiet("Downloading $archive.name")
+                    project.ant.get(dest: archive) {
+                        url(url: urlToNode)
+                    }
+                }
+
+                project.logger.quiet("Bootstraping to $env.dir")
+                switch (archive.name as String) {
+                    case { it.endsWith("zip") }:
+                        project.ant.unzip(src: archive, dest: project.buildDir)
+                        new File(project.buildDir, archive.name.replaceFirst(".zip", "")).with { src ->
+                            project.ant.move(file: src, tofile: env.dir)
+                        }
+                        break
+                    case { it.endsWith("tar.gz") }:
+                        project.ant.mkdir(dir: env.dir)
+                        "tar --strip-components 1 -xzf $archive -C $env.dir".execute()
+                        break
+                }
+
+                // Looks like .execute() does it's job in background, but we rely on npm further
+                while (!new File(env.dir, "bin/npm").exists()) {
+                    sleep(500)
+                }
+            }
+        }
+    }
+
+    private Task installNpmPackages(Project project, Node env, List<String> packages) {
+        return project.tasks.create(name: "Install $packages to $env.name") {
+            doLast {
+                project.logger.quiet("Install $env.packages to $env.name")
+                project.exec({
+                    environment 'PATH', new File(env.dir, "bin")
+                    executable new File(env.dir, "bin/npm").absolutePath
+                    args = ["install", "-g", *packages]
+                })
+
+            }
+        }
+    }
+
     @Override
     void apply(Project project) {
         project.mkdir("build")
@@ -47,41 +101,10 @@ class NodeEnvsPlugin implements Plugin<Project> {
             project.tasks.create(name: 'build_nodes') {
                 onlyIf { !envs.nodes.empty }
 
-                envs.nodes.each { env ->
-                    dependsOn project.tasks.create(name: "Bootstrap Node.js '$env.name'") {
-                        onlyIf {
-                            !env.dir.exists()
-                        }
-
-                        doLast {
-                            URL urlToNode = getUrlToDownloadNode(env)
-                            File archive = new File(project.buildDir, urlToNode.toString().split("/").last())
-
-                            if (!archive.exists()) {
-                                project.logger.quiet("Downloading $archive.name")
-                                project.ant.get(dest: archive) {
-                                    url(url: urlToNode)
-                                }
-                            }
-
-                            project.logger.quiet("Bootstraping to $env.dir")
-                            switch (archive.name as String) {
-                                case { it.endsWith("zip") }:
-                                    project.ant.unzip(src: archive, dest: project.buildDir)
-                                    new File(project.buildDir, archive.name.replaceFirst(".zip", "")).with { src ->
-                                        project.ant.move(file: src, tofile: env.dir)
-                                    }
-                                    break
-                                case { it.endsWith("tar.gz") }:
-                                    project.ant.mkdir(dir: env.dir)
-                                    "tar --strip-components 1 -xzf $archive -C $env.dir".execute()
-                                    break
-                            }
-
-                        }
-                    }
+                envs.nodes.each { Node env ->
+                    dependsOn createNodeJs(project, env)
+                    if (env.packages != null) dependsOn installNpmPackages(project, env, env.packages)
                 }
-
             }
         }
     }
