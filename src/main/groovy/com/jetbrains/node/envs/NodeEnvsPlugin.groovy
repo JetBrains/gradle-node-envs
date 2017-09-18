@@ -66,13 +66,8 @@ class NodeEnvsPlugin implements Plugin<Project> {
                         break
                     case { it.endsWith("tar.gz") }:
                         project.ant.mkdir(dir: env.dir)
-                        "tar --strip-components 1 -xzf $archive -C $env.dir".execute()
+                        "tar --strip-components 1 -xzf $archive -C $env.dir".execute().waitFor()
                         break
-                }
-
-                // Looks like .execute() does it's job in background, but we rely on npm further
-                while (!new File(env.dir, "bin/npm").exists()) {
-                    sleep(500)
                 }
             }
         }
