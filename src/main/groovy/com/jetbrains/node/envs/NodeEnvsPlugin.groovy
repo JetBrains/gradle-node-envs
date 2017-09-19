@@ -69,30 +69,27 @@ class NodeEnvsPlugin implements Plugin<Project> {
                         "tar --strip-components 1 -xzf $archive -C $env.dir".execute().waitFor()
                         break
                 }
+
+                if (env.packages != null) installNpmPackages(project, env, env.packages)
             }
         }
     }
 
-    private Task installNpmPackages(Project project, Node env, List<String> packages) {
-        return project.tasks.create(name: "Install $packages to $env.name") {
-            doLast {
-                project.logger.quiet("Install $env.packages to $env.name")
-                project.exec({
-                    switch(os) {
-                        case OS.WIN:
-                            environment 'PATH', env.dir
-                            executable new File(env.dir, "npm.cmd").absolutePath
-                            break
-                        case [OS.LINUX, OS.MAC]:
-                            environment 'PATH', new File(env.dir, "bin")
-                            executable new File(env.dir, "bin/npm").absolutePath
-                            break
-                    }
-                    args = ["install", "-g", *packages]
-                })
-
+    private void installNpmPackages(Project project, Node env, List<String> packages) {
+        project.logger.quiet("Install $env.packages to $env.name")
+        project.exec({
+            switch (os) {
+                case OS.WIN:
+                    environment 'PATH', env.dir
+                    executable new File(env.dir, "npm.cmd").absolutePath
+                    break
+                case [OS.LINUX, OS.MAC]:
+                    environment 'PATH', new File(env.dir, "bin")
+                    executable new File(env.dir, "bin/npm").absolutePath
+                    break
             }
-        }
+            args = ["install", "-g", *packages]
+        })
     }
 
     @Override
@@ -106,7 +103,6 @@ class NodeEnvsPlugin implements Plugin<Project> {
 
                 envs.nodes.each { Node env ->
                     dependsOn createNodeJs(project, env)
-                    if (env.packages != null) dependsOn installNpmPackages(project, env, env.packages)
                 }
             }
         }
