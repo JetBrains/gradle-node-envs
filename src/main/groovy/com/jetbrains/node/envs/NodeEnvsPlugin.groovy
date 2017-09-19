@@ -78,8 +78,16 @@ class NodeEnvsPlugin implements Plugin<Project> {
             doLast {
                 project.logger.quiet("Install $env.packages to $env.name")
                 project.exec({
-                    environment 'PATH', new File(env.dir, "bin")
-                    executable new File(env.dir, "bin/npm").absolutePath
+                    switch(os) {
+                        case OS.WIN:
+                            environment 'PATH', env.dir
+                            executable new File(env.dir, "npm.cmd").absolutePath
+                            break
+                        case [OS.LINUX, OS.MAC]:
+                            environment 'PATH', new File(env.dir, "bin")
+                            executable new File(env.dir, "bin/npm").absolutePath
+                            break
+                    }
                     args = ["install", "-g", *packages]
                 })
 
