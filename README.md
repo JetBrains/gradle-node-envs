@@ -6,7 +6,7 @@ Usage
 -----
                                                 
 Apply the plugin to your project following
-**TODO**,
+https://plugins.gradle.org/plugin/com.jetbrains.node.envs,
 and configure the associated extension:
 
 ```gradle
