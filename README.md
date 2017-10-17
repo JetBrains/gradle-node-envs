@@ -36,3 +36,26 @@ This will download and install specified Node.Js envs to `buildDir/envs`.
 
 Libraries listed will be installed correspondingly. Packages in list are installed with `npm install -g <package>` command.
 
+
+```gradle
+envs {
+      envsDirectory = new File(buildDir, 'envs')
+      // By default 64 bit envs should be installed
+      // _64Bits = true
+  
+  
+      //usage dart "envName", "channel"
+      dart "devLatest", "dev"
+      dart "stableLatest", "stable"
+  
+      //usage dart "envName", "channel", "version"
+      dart "dart-1.24.1", "stable", "1.24.1"
+      
+      //usage dart "envName", "channel", "version", "architecture"
+      dart "dart-1.24.1", "dev", "2.0.0-dev.0.0", "32"
+}
+```
+
+Then invoke the `build_darts` task. 
+
+This will download and install specified Dart envs to `buildDir/envs`.
