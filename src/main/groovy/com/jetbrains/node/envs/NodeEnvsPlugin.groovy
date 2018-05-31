@@ -95,7 +95,7 @@ class NodeEnvsPlugin implements Plugin<Project> {
                     executable new File(env.dir, "bin/npm").absolutePath
                     break
             }
-            args = ["install", "-g", *packages]
+            args = ["install", "-g", "--allow-root", "--unsafe-perm=true", *packages]
         })
     }
 
