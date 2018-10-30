@@ -120,6 +120,12 @@ class NodeEnvsPlugin implements Plugin<Project> {
                     project.ant.move(file: src, tofile: dart.dir)
                 }
 
+                // Make dart and pub being executable
+                project.exec {
+                    executable "chmod"
+                    args = ["+x", "${dart.dir}/bin/dart", "${dart.dir}/bin/pub"]
+                }
+
                 // This is necessary, because archive name isn't unique
                 archive.delete()
             }
