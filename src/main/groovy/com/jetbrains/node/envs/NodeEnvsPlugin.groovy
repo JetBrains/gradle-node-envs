@@ -121,9 +121,11 @@ class NodeEnvsPlugin implements Plugin<Project> {
                 }
 
                 // Make dart and pub being executable
-                project.exec {
-                    executable "chmod"
-                    args = ["+x", "${dart.dir}/bin/dart", "${dart.dir}/bin/pub"]
+                if (os in [OS.LINUX, OS.MAC]) {
+                    project.exec {
+                        executable "chmod"
+                        args = ["+x", "${dart.dir}/bin/dart", "${dart.dir}/bin/pub"]
+                    }
                 }
 
                 // This is necessary, because archive name isn't unique
